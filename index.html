@@ -157,6 +157,54 @@
 
     
     <script>__loadEntry()</script>
+
+    <script>
+// Wait until the player object is available
+function onPlayerReady(callback) {
+    if (window.Player && typeof window.Player.getCurrentSlide === 'function') {
+        callback();
+    } else {
+        setTimeout(() => onPlayerReady(callback), 100);
+    }
+}
+
+function storeProgress() {
+    const current = Player.getCurrentSlide();
+    if (current && current.id) {
+        localStorage.setItem('lastSlideId', current.id);
+    }
+}
+
+function restoreProgressPrompt() {
+    const lastSlideId = localStorage.getItem('lastSlideId');
+    if (!lastSlideId) return;
+
+    const continueSession = confirm("Resume where you left off?");
+    if (continueSession) {
+        onPlayerReady(() => {
+            Player.goToSlide(lastSlideId);
+        });
+    }
+}
+
+onPlayerReady(() => {
+    restoreProgressPrompt();
+
+    // Hook into navigation to store progress
+    const originalNext = Player.next;
+    Player.next = function() {
+        storeProgress();
+        return originalNext.apply(Player, arguments);
+    };
+
+    const originalGoToSlide = Player.goToSlide;
+    Player.goToSlide = function(slideId) {
+        localStorage.setItem('lastSlideId', slideId);
+        return originalGoToSlide.apply(Player, arguments);
+    };
+});
+</script>
+
     
   </body>
 </html>
